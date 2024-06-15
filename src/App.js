@@ -7,15 +7,31 @@ import {
   convertToRaw,
   convertFromRaw,
   Modifier,
+  getDefaultKeyBinding
 } from "draft-js";
 import "draft-js/dist/Draft.css";
 import "./styles.css";
 
+
+  // Custom Style Map
+  const styleMap = {
+    RED: {
+      color: "red",
+    },
+    UNDERLINE: {
+      textDecoration: "underline",
+    },
+  };
+
+
 const DraftEditor = () => {
+  // Editor State Initialization
   const [editorState, setEditorState] = useState(() =>
     EditorState.createEmpty()
   );
 
+  // Load Saved Content on Mount
+  // Checks localStorage for saved content and loads it if available.
   useEffect(() => {
     const savedContent = localStorage.getItem("editorContent");
     if (savedContent) {
@@ -25,6 +41,7 @@ const DraftEditor = () => {
     }
   }, []);
 
+  // Handle Key Commands
   const handleKeyCommand = (command, editorState) => {
     const newState = RichUtils.handleKeyCommand(editorState, command);
     if (newState) {
@@ -34,6 +51,8 @@ const DraftEditor = () => {
     return "not-handled";
   };
 
+  // Custom Input Handling
+  // Detects special input patterns and applies corresponding formatting
   const handleBeforeInput = (input, editorState) => {
     const contentState = editorState.getCurrentContent();
     const selectionState = editorState.getSelection();
@@ -136,6 +155,8 @@ const DraftEditor = () => {
     return "not-handled";
   };
 
+  //Save Content 
+  // Saves the current editor content to localStorage
   const saveContent = () => {
     const contentState = editorState.getCurrentContent();
     const rawContentState = convertToRaw(contentState);
@@ -143,36 +164,64 @@ const DraftEditor = () => {
     alert("Content saved!");
   };
 
-  const styleMap = {
-    RED: {
-      color: 'red',
-    },
-    UNDERLINE: {
-      textDecoration: 'underline',
-    },
+  const keyBindingFn = (e) => {
+    if (e.keyCode === 32) { // Checks if the space key is pressed (keyCode === 32).
+      const contentState = editorState.getCurrentContent();
+      const selectionState = editorState.getSelection();
+      const startKey = selectionState.getStartKey();
+      const block = contentState.getBlockForKey(startKey);
+      const blockText = block.getText();
+ 
+      if (blockText === '#' || blockText === '*' || blockText === '**' || blockText === '***' || blockText === '```') {
+        handleBeforeInput(' ', editorState);
+        return null;
+      }
+    }
+
+    return getDefaultKeyBinding(e);
   };
 
   return (
     <div className="editor-container">
+
+      <h2>Text Editor with DraftJs</h2>
       <div className="editor">
-      <Editor
-  editorState={editorState}
-  handleKeyCommand={handleKeyCommand}
-  handleBeforeInput={handleBeforeInput}
-  onChange={setEditorState}
-  customStyleMap={styleMap}
-  placeholder="Start typing..."
-/>
+        <Editor
+          editorState={editorState}
+          handleKeyCommand={handleKeyCommand}
+          handleBeforeInput={handleBeforeInput}
+          onChange={setEditorState}
+          keyBindingFn={keyBindingFn}
+          customStyleMap={styleMap}
+          placeholder="Start typing..."
+        />
       </div>
       <button onClick={saveContent} className="save-button">
         Save
       </button>
+      <h1>Instructions</h1>
       <ul className="instructions">
-        <li> h1 -  Type <code>#</code> as the first string in a line & press space for “Heading 1” format.</li>
-        <li> <strong>“bold”</strong> -  Type <code>*</code> as the first string in a line and press space should correspond to “bold” format</li>
-        <li> <span style={{color: "red"}}>Red text</span> - Type <code>**</code> as the first string in a line and press space and space = red line</li>
-        <li><span style={{textDecoration: "underline"}}> Underline</span> - Type <code>***</code> as the first string in a line and press space and space = underline</li>
-        <li>Type <pre><code>```</code></pre> as the first string in a line and press space to use Code-block</li>
+        <li>
+          h1 - Type <code>#</code> as the first string in a line & press space
+          for “Heading 1” format.
+        </li>
+        <li>
+          <strong>“bold”</strong> - Type <code>*</code> as the first string in a
+          line and press space should correspond to “bold” format
+        </li>
+        <li>
+          <span style={{ color: "red" }}>Red text</span> - Type <code>**</code>
+          as the first string in a line and press space and space = red line
+        </li>
+        <li>
+          <span style={{ textDecoration: "underline" }}> Underline</span> - Type 
+          <code>***</code> as the first string in a line and press space and
+          space = underline
+        </li>
+        <li> <span>Code Block</span> - 
+          Type <code>```</code> as the first string in a line and press space to
+          use Code-block
+        </li>
       </ul>
     </div>
   );
